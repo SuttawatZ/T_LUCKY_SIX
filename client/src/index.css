@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base { body { @apply bg-cream text-ink antialiased; } }
+@layer utilities { .ticket-cut { background-image: radial-gradient(circle at 0 100%, transparent 9px, white 10px), radial-gradient(circle at 100% 100%, transparent 9px, white 10px); background-size: 51% 100%; background-position: left bottom, right bottom; background-repeat: no-repeat; } }
+.hero-shell { background: radial-gradient(circle at 82% 45%, rgba(245, 181, 68, .14), transparent 28%), linear-gradient(105deg, rgba(255, 250, 242, .95), rgba(255, 246, 224, .72)); }
+.hero-draw-card { transition: transform .3s ease, box-shadow .3s ease; }
+.hero-draw-card:hover { transform: translateY(-5px); box-shadow: 16px 22px 0 #f4dfb9; }
+
+html.dark body { background: #0b1220; color: #f8fafc; }
+html.dark .bg-cream, html.dark .bg-white { background-color: #111b2e; }
+html.dark .bg-cream\/90 { background-color: rgba(17, 27, 46, .92); }
+html.dark header a, html.dark header nav a { color: #f8fafc; }
+html.dark header .bg-white { background-color: #22304a; color: #f8fafc; border-color: #40516e; }
+html.dark .bg-slate-50, html.dark .bg-slate-100 { background-color: #18243a; }
+html.dark .bg-\[\#f8efd9\] { background-color: #172235; }
+html.dark .text-ink { color: #f8fafc; }
+html.dark .text-slate-600, html.dark .text-slate-500, html.dark .text-stone-600 { color: #b8c4d6; }
+html.dark .border-stone-200\/80, html.dark .border-stone-200, html.dark .border-slate-100, html.dark .border-slate-200 { border-color: #2b3a54; }
+html.dark input { color: #f8fafc; }
+html.dark input::placeholder { color: #91a0b8; }
+html.dark .ticket-cut { background-image: radial-gradient(circle at 0 100%, transparent 9px, #111b2e 10px), radial-gradient(circle at 100% 100%, transparent 9px, #111b2e 10px); }
+html.dark .shadow-ticket { box-shadow: 0 14px 30px rgba(0, 0, 0, .25); }
+html.dark .bg-amber-50 { background-color: #3a2d16; }
+html.dark .bg-amber-100 { background-color: #5b4618; }
+html.dark .text-amber-800 { color: #f8cf6a; }
+html.dark .ticket-cut .text-amber-800 { color: #ffe08a; }
+html.dark .bg-amber-300.text-ink { background-color: #f7c84b; color: #10233d; box-shadow: 0 2px 8px rgba(0, 0, 0, .28); }
+html.dark .bg-amber-100.text-amber-800 { background-color: #6b531b; color: #ffe08a; border: 1px solid #d9a92e; }
+html.dark .bg-amber-400.text-ink { background-color: #f7c84b; color: #10233d; border: 1px solid #ffe08a; box-shadow: 0 3px 10px rgba(0, 0, 0, .3); }
+html.dark .hero-shell { background: #0b1220; }
+html.dark .hero-cta { box-shadow: none; }
+html.dark .hero-draw-card, html.dark .hero-draw-card:hover { box-shadow: none; }

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LUCKY SIX | สลากกินแบ่งรัฐบาล</title>
+  </head>
+  <body><div id="root"></div>
+    <header class="nav"><a class="brand" href="#top"><span>✦</span> LUCKY <b>SIX</b></a><nav><a href="#tickets">เลือกสลาก</a><a href="#how">วิธีสั่งซื้อ</a><a href="#results">ตรวจผลรางวัล</a></nav><button class="cart-trigger" id="openCart">ตะกร้า <strong id="cartCount">0</strong></button></header>
+    <main id="top">
+      <section class="wheel-section"><div class="lucky-wheel"><div class="wheel-copy"><p class="eyebrow">Lucky draw</p><h2>วงล้อสุ่มเลขนำโชค</h2><p>หมุนวงล้อเพื่อรับเลข 6 หลัก แล้วค้นหาสลากเลขนั้นได้ทันที</p><div class="lucky-result" id="luckyResult">— — — — — —</div><button class="spin-button" id="spinButton">✦ หมุนวงล้อ</button><button class="search-lucky" id="searchLucky" disabled>ค้นหาเลขนี้ →</button></div><div class="wheel-stage"><div class="pointer">◆</div><div class="wheel" id="wheel"><span class="wheel-number n1">0</span><span class="wheel-number n2">1</span><span class="wheel-number n3">2</span><span class="wheel-number n4">3</span><span class="wheel-number n5">4</span><span class="wheel-number n6">5</span><span class="wheel-number n7">6</span><span class="wheel-number n8">7</span><span class="wheel-number n9">8</span><span class="wheel-number n10">9</span><i>LUCKY<br />SIX</i></div></div></div></section>
+      <section class="hero">
+        <div class="hero-copy"><p class="eyebrow">งวดถัดไป • 16 กันยายน 2569</p><h1>เลขที่ใช่<br /><em>อาจเป็นของคุณ</em></h1><p class="lead">เลือกสลากกินแบ่งรัฐบาลจากเลขที่คุณชอบ พร้อมจองไว้ในตะกร้าอย่างปลอดภัย</p><a class="primary" href="#tickets">เลือกเลขของคุณ <span>↓</span></a><div class="trust"><span>✓ คัดเลือกสลากจริง</span><span>✓ ชำระเงินปลอดภัย</span><span>✓ ดูประวัติได้ทุกเวลา</span></div></div>
+        <aside class="draw-card"><div class="sun">✦</div><p>งวดประจำวันที่</p><h2>16 ก.ย. 2569</h2><div class="divider"></div><p>ปิดรับจองใน</p><div class="countdown"><strong id="days">05</strong><i>วัน</i><strong id="hours">12</strong><i>ชม.</i><strong id="minutes">48</strong><i>นาที</i></div><a href="#tickets">ดูสลากที่พร้อมขาย →</a></aside>
+      </section>
+      <section class="stats"><div><b>6,000,000</b><span>บาท รางวัลที่ 1</span></div><div><b>80+</b><span>บาท ราคาเริ่มต้น</span></div><div><b>10 นาที</b><span>เวลาจองในตะกร้า</span></div></section>
+      <section class="tickets-section" id="tickets"><div class="section-heading"><div><p class="eyebrow">เลือกเลขนำโชค</p><h2>สลากพร้อมให้เลือก</h2></div><label class="search"><span>⌕</span><input id="searchInput" maxlength="6" inputmode="numeric" placeholder="ค้นหาเลขที่ชอบ" /></label></div><div class="chips"><button class="chip active" data-filter="">ทั้งหมด</button><button class="chip" data-filter="0">เลขลงท้าย 0</button><button class="chip" data-filter="9">เลขลงท้าย 9</button><button class="chip" data-filter="11">เลขเบิ้ล</button></div><div class="ticket-grid" id="ticketGrid"></div><p class="empty" id="emptyState" hidden>ไม่พบเลขที่ค้นหา ลองค้นหาตัวเลขอื่นดูนะ</p></section>
+      <section class="how" id="how"><p class="eyebrow">ง่ายใน 3 ขั้นตอน</p><h2>เลือกเลขอย่างมั่นใจ</h2><div class="steps"><article><b>01</b><h3>เลือกเลขที่ชอบ</h3><p>ค้นหาเลขมงคล หรือเลือกจากสลากที่พร้อมขาย</p></article><article><b>02</b><h3>จองในตะกร้า</h3><p>เลขของคุณจะถูกจองไว้ 10 นาที เพื่อให้ชำระเงินได้ทัน</p></article><article><b>03</b><h3>ชำระและรอลุ้น</h3><p>เก็บประวัติสลากไว้ในบัญชี พร้อมตรวจผลได้ในที่เดียว</p></article></div></section>
+    </main>
+    <footer id="results"><a class="brand" href="#top"><span>✦</span> LUCKY <b>SIX</b></a><p>แพลตฟอร์มตัวอย่างสำหรับสลากกินแบ่งรัฐบาล</p><small>กรุณาตรวจสอบข้อกำหนดด้านอายุ ใบอนุญาต และกฎหมายที่เกี่ยวข้องก่อนใช้งานจริง</small></footer>
+    <aside class="cart-panel" id="cartPanel" aria-hidden="true"><div class="cart-head"><div><p class="eyebrow">รายการที่เลือก</p><h2>ตะกร้าของคุณ</h2></div><button class="close" id="closeCart" aria-label="ปิด">×</button></div><div class="reservation" id="reservation">✦ เลขในตะกร้าจะถูกจองไว้ 10 นาที</div><div id="cartItems" class="cart-items"></div><div class="cart-empty" id="cartEmpty">ยังไม่มีสลากในตะกร้า<br /><span>เลือกเลขที่คุณชอบได้เลย</span></div><div class="cart-bottom"><div><span>ยอดรวม</span><strong id="cartTotal">฿0</strong></div><button class="checkout" id="checkout" disabled>ดำเนินการชำระเงิน →</button></div></aside><div class="backdrop" id="backdrop"></div>
+    <div class="toast" id="toast"></div><script src="app.js"></script>
+  </body>
+</html>
