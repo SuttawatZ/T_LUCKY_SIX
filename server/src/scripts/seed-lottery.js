@@ -11,14 +11,14 @@ async function seed() {
   await Draw.deleteOne({ drawDate: new Date("2026-09-01T10:00:00+07:00"), label: "งวด 1 กันยายน 2569" });
   const drawDate = new Date("2026-09-16T10:00:00+07:00");
   const draw = await Draw.findOneAndUpdate({ drawDate }, { $set: { status: "announced", results: { firstPrize: "730640", lastTwoDigits: ["64"], frontThreeDigits: ["060", "521"], lastThreeDigits: ["041", "266"] } }, $setOnInsert: { label: "งวด 16 กันยายน 2569", drawDate, saleStartAt: new Date(), saleEndAt: new Date("2026-09-15T23:59:59+07:00") } }, { new: true, upsert: true });
-  await Ticket.bulkWrite(numbers.map((number, index) => ({ updateOne: { filter: { drawId: draw._id, number, series: `ชุด ${String(index + 1).padStart(2, "0")}`, setCode: "" }, update: { $setOnInsert: { drawId: draw._id, number, series: `ชุด ${String(index + 1).padStart(2, "0")}`, setCode: "", price: [80, 100, 120, 140][index % 4], faceValue: 80, status: "available" } }, upsert: true } })));
+  await Ticket.bulkWrite(numbers.map((number, index) => ({ updateOne: { filter: { drawId: draw._id, number, series: `ชุด ${String(index + 1).padStart(2, "0")}`, setCode: "" }, update: { $set: { price: [80, 90, 100, 120][index % 4], faceValue: 80 }, $setOnInsert: { drawId: draw._id, number, series: `ชุด ${String(index + 1).padStart(2, "0")}`, setCode: "", status: "available" } }, upsert: true } })));
     const nextDrawDate = new Date("2026-10-01T10:00:00+07:00");
     const nextDraw = await Draw.findOneAndUpdate(
       { drawDate: nextDrawDate },
       { $set: { status: "open", saleStartAt: new Date(), saleEndAt: new Date("2026-09-30T23:59:59+07:00") }, $setOnInsert: { label: "งวด 1 ตุลาคม 2569", drawDate: nextDrawDate } },
       { new: true, upsert: true }
     );
-    await Ticket.bulkWrite(numbers.map((number, index) => ({ updateOne: { filter: { drawId: nextDraw._id, number, series: `ชุด ${String(index + 1).padStart(2, "0")}`, setCode: "" }, update: { $setOnInsert: { drawId: nextDraw._id, number, series: `ชุด ${String(index + 1).padStart(2, "0")}`, setCode: "", price: [80, 100, 120, 140][index % 4], faceValue: 80, status: "available" } }, upsert: true } })));
+    await Ticket.bulkWrite(numbers.map((number, index) => ({ updateOne: { filter: { drawId: nextDraw._id, number, series: `ชุด ${String(index + 1).padStart(2, "0")}`, setCode: "" }, update: { $set: { price: [80, 90, 100, 120][index % 4], faceValue: 80 }, $setOnInsert: { drawId: nextDraw._id, number, series: `ชุด ${String(index + 1).padStart(2, "0")}`, setCode: "", status: "available" } }, upsert: true } })));
   console.log(`Seeded ${numbers.length} tickets for ${draw.label}`);
     console.log(`Seeded ${numbers.length} tickets for ${nextDraw.label}`);
   await mongoose.disconnect();

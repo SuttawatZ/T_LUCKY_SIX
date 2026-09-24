@@ -49,7 +49,7 @@ const createTicket = async (req, res, next) => {
   try {
     const { drawId, number, series = "", setCode = "", price = 80, faceValue = 80 } = req.body;
     if (!drawId || !/^\d{6}$/.test(String(number || ""))) return res.status(400).json({ message: "กรุณาระบุงวดและเลขสลาก 6 หลัก" });
-    if (!Number.isFinite(Number(price)) || Number(price) < 80) return res.status(400).json({ message: "ราคาสลากต้องไม่น้อยกว่า 80 บาท" });
+    if (!Number.isFinite(Number(price)) || Number(price) < 80 || Number(price) > 120) return res.status(400).json({ message: "ราคาสลากต้องอยู่ระหว่าง 80-120 บาท" });
     const draw = await Draw.findById(drawId);
     if (!draw) return res.status(404).json({ message: "ไม่พบงวดสลาก" });
     if (!["open", "upcoming"].includes(draw.status)) return res.status(409).json({ message: "งวดนี้ไม่เปิดรับเพิ่มสลาก" });
@@ -74,7 +74,7 @@ const updateTicket = async (req, res, next) => {
     const allowed = ["number", "series", "setCode", "price", "faceValue", "status"];
     const updates = Object.fromEntries(allowed.filter((key) => req.body[key] !== undefined).map((key) => [key, req.body[key]]));
     if (updates.number && !/^\d{6}$/.test(String(updates.number))) return res.status(400).json({ message: "เลขสลากต้องมี 6 หลัก" });
-    if (updates.price !== undefined && Number(updates.price) < 80) return res.status(400).json({ message: "ราคาสลากต้องไม่น้อยกว่า 80 บาท" });
+    if (updates.price !== undefined && (Number(updates.price) < 80 || Number(updates.price) > 120)) return res.status(400).json({ message: "ราคาสลากต้องอยู่ระหว่าง 80-120 บาท" });
     const ticket = await Ticket.findOneAndUpdate({ _id: req.params.id }, { $set: updates }, { new: true, runValidators: true });
     if (!ticket) return res.status(404).json({ message: "ไม่พบสลากที่ต้องการแก้ไข" });
     res.json({ ticket });

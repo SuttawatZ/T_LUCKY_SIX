@@ -65,7 +65,7 @@ export default function AdminTicketPanel() {
 
       if (!payload.drawId) throw new Error("กรุณาเลือกงวดสลาก");
       if (!/^\d{6}$/.test(payload.number)) throw new Error("เลขสลากต้องเป็นเลข 6 หลัก");
-      if (!Number.isFinite(payload.price) || payload.price < 80) throw new Error("ราคาสลากต้องไม่น้อยกว่า 80 บาท");
+      if (!Number.isFinite(payload.price) || payload.price < 80 || payload.price > 120) throw new Error("ราคาสลากต้องอยู่ระหว่าง 80-120 บาท");
 
       if (editingTicketId) {
         const { ticket: updated } = await lotteryApi.updateTicket(editingTicketId, payload);
@@ -179,6 +179,7 @@ export default function AdminTicketPanel() {
                     required
                     type="number"
                     min="80"
+                    max="120"
                     value={form.price}
                     onChange={(event) => setForm({ ...form, price: event.target.value })}
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
