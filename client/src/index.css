@@ -45,3 +45,4 @@ html.dark section.fixed.bg-white label.text-slate-700 { color: #cbd5e1; }
 html.dark section.fixed.bg-white label input { background-color: #ffffff; color: #111827; border-color: #94a3b8; }
 html.dark section.fixed.bg-white label input::placeholder { color: #64748b; }
 html.dark section.fixed.bg-white .bg-slate-50 { background-color: #242936; }
+html.dark button.bg-gold.text-ink { color: #111827; }
