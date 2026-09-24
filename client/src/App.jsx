@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import UserPanel from "./UserPanel";
 import AdminPanel from "./AdminPanel";
 import AdminTicketPanel from "./AdminTicketPanel";
@@ -31,7 +31,7 @@ function TicketCard({ ticket, onAdd, selected, drawLabel }) {
     </div>
     <div className="mt-3 border-t border-dashed border-slate-200 pt-3">
       <div className="mb-3 flex items-end justify-between gap-2"><span className="text-xs text-slate-500">ราคาใบละ</span><b className="font-['DM_Sans'] text-xl font-bold text-amber-600">{baht(ticket.price)}</b></div>
-      <button onClick={() => onAdd(ticket)} disabled={selected} className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#dc2626] px-3 py-3 text-xs font-bold text-white transition hover:bg-[#b91c1c] disabled:cursor-default disabled:bg-slate-200 disabled:text-slate-400"><ShoppingBag size={16} />{selected ? "อยู่ในตะกร้าแล้ว" : "หยิบใส่ตะกร้า"}</button>
+            <button onClick={() => onAdd(ticket)} disabled={selected} className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#dc2626] px-3 py-3 text-xs font-bold text-white transition hover:bg-[#b91c1c] disabled:cursor-default disabled:bg-slate-200 disabled:text-slate-400"><ShoppingBag size={16} />{selected ? "อยู่ในตะกร้าแล้ว" : "หยิบใส่ตะกร้า"}</button>
     </div>
   </article>;
 }
@@ -76,10 +76,16 @@ export default function App() {
   const [query, setQuery] = useState(""); const [filter, setFilter] = useState(""); const [cart, setCart] = useState([]); const [inventory, setInventory] = useState(tickets); const [results, setResults] = useState([]); const [drawer, setDrawer] = useState(false); const [notice, setNotice] = useState(""); const [darkMode, setDarkMode] = useState(() => localStorage.getItem("lucky-six-theme") === "dark");
   const [now, setNow] = useState(() => new Date());
   const ownerKey = useMemo(() => { const saved = localStorage.getItem("lucky-six-cart-key"); if (saved) return saved; const next = crypto.randomUUID(); localStorage.setItem("lucky-six-cart-key", next); return next; }, []);
+  const previousCartIds = useRef([]);
   useEffect(() => { document.documentElement.classList.toggle("dark", darkMode); localStorage.setItem("lucky-six-theme", darkMode ? "dark" : "light"); }, [darkMode]);
   useEffect(() => { const timer = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(timer); }, []);
   useEffect(() => { lotteryApi.tickets().then((data) => { const loaded = data.map((ticket) => ({ id: ticket._id, number: ticket.number, price: ticket.price, set: ticket.setCode || ticket.series || "สลากกินแบ่ง" })); if (!loaded.length) return; setInventory(loaded); return lotteryApi.cart(ownerKey).then((savedCart) => setCart(savedCart.items.map((item) => loaded.find((ticket) => ticket.id === item.ticketId) || ({ id: item.ticketId, number: item.number, price: item.priceSnapshot, set: "สลากกินแบ่ง" })))); }).catch(() => setNotice("ยังเชื่อมต่อ API ไม่ได้ จึงแสดงข้อมูลตัวอย่าง")); }, [ownerKey]);
   useEffect(() => { lotteryApi.results().then((data) => setResults(Array.isArray(data) ? data : [])).catch(() => setResults([])); }, []);
+  useEffect(() => {
+    const removedIds = previousCartIds.current.filter((id) => !cart.some((ticket) => ticket.id === id));
+    removedIds.filter(isStoredTicket).forEach((ticketId) => lotteryApi.removeFromCart(ownerKey, ticketId).catch(() => null));
+    previousCartIds.current = cart.map((ticket) => ticket.id);
+  }, [cart, ownerKey]);
   const shown = useMemo(() => {
     if (filter === "0" || filter === "9") return inventory.filter((ticket) => ticket.number.endsWith(filter));
     if (filter === "11") return inventory.filter((ticket) => /(\d)\1/.test(ticket.number));
@@ -93,6 +99,14 @@ export default function App() {
       if (isStoredTicket(ticket.id)) await lotteryApi.addToCart(ownerKey, ticket.id);
       setCart((current) => [...current, ticket]);
       setNotice(`จองเลข ${ticket.number} แล้ว`);
+      setTimeout(() => setNotice(""), 2200);
+    } catch (error) { setNotice(error.message); }
+  };
+  const remove = async (ticket) => {
+    try {
+      if (isStoredTicket(ticket.id)) await lotteryApi.removeFromCart(ownerKey, ticket.id);
+      setCart((current) => current.filter((item) => item.id !== ticket.id));
+      setNotice(`นำเลข ${ticket.number} ออกจากตะกร้าแล้ว`);
       setTimeout(() => setNotice(""), 2200);
     } catch (error) { setNotice(error.message); }
   };
