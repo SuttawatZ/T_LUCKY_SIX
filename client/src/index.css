@@ -41,3 +41,7 @@ html.dark .hero-draw-card { background-color: #242936; box-shadow: 16px 17px 0 #
 html.dark .text-blue-100, html.dark .text-blue-200 { color: #cbd5e1; }
 html.dark .text-amber-700 { color: #f87171; }
 html.dark [class~="bg-[#153f70]"] { background-color: #242936; }
+html.dark section.fixed.bg-white label.text-slate-700 { color: #cbd5e1; }
+html.dark section.fixed.bg-white label input { background-color: #ffffff; color: #111827; border-color: #94a3b8; }
+html.dark section.fixed.bg-white label input::placeholder { color: #64748b; }
+html.dark section.fixed.bg-white .bg-slate-50 { background-color: #242936; }
