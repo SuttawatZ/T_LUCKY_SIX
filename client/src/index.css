@@ -46,3 +46,4 @@ html.dark section.fixed.bg-white label input { background-color: #ffffff; color:
 html.dark section.fixed.bg-white label input::placeholder { color: #64748b; }
 html.dark section.fixed.bg-white .bg-slate-50 { background-color: #242936; }
 html.dark button.bg-gold.text-ink { color: #111827; }
+section .relative.h-52.w-52 > span { color: #dc2626; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .7)); }
