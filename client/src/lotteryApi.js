@@ -23,7 +23,7 @@ async function request(path, options = {}) {
 export const lotteryApi = {
   dashboard: () => request("/dashboard"),
   results: () => request("/results"),
-  tickets: () => request("/tickets?limit=100"),
+  tickets: () => request("/tickets?limit=500"),
   draws: () => request("/draws"),
   createTicket: (body) => request("/admin/tickets", { method: "POST", body: JSON.stringify(body) }),
   adminTickets: () => request("/admin/tickets"),
