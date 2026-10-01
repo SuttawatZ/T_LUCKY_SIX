@@ -16,6 +16,8 @@ export const userApi = {
   login: (body) => request("/login", { method: "POST", body: JSON.stringify(body) }),
   me: () => request("/me"),
   update: (body) => request("/me", { method: "PATCH", body: JSON.stringify(body) }),
+  orders: () => request("/me/orders"),
+  tickets: () => request("/me/tickets"),
   users: (query = "") => request(`/admin/users${query ? `?q=${encodeURIComponent(query)}` : ""}`),
   updateUser: (id, body) => request(`/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
 };

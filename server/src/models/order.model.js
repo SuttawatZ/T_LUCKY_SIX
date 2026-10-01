@@ -10,6 +10,7 @@ const orderSchema = new mongoose.Schema(
     subtotal: { type: Number, required: true, min: 0 },
     serviceFee: { type: Number, default: 0, min: 0 },
     total: { type: Number, required: true, min: 0 },
+    paymentMethod: { type: String, enum: ["promptpay", "bank_transfer", "credit_card", "truemoney"], default: "promptpay" },
     status: { type: String, enum: ["pending_payment", "paid", "fulfilled", "cancelled", "refunded"], default: "pending_payment", index: true },
     paymentStatus: { type: String, enum: ["pending", "paid", "failed", "refunded"], default: "pending" },
   },

@@ -17,6 +17,6 @@ router.patch("/admin/draws/:id/results", requireAuth, requireRole("admin"), cont
 router.get("/carts/:ownerKey", controller.getCart);
 router.post("/carts/items", controller.addToCart);
 router.delete("/carts/items", controller.removeFromCart);
-router.post("/orders", controller.createOrder);
+router.post("/orders", requireAuth, controller.createOrder);
 
 module.exports = router;

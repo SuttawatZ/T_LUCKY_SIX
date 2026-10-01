@@ -131,7 +131,7 @@ export default function AdminTicketPanel() {
       {open && (
         <>
           <button type="button" onClick={() => setOpen(false)} className="fixed inset-0 z-40 bg-slate-950/45" aria-label="ปิด" />
-          <div className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="admin-ticket-modal fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="max-h-[90vh] overflow-y-auto p-6">
               <button type="button" onClick={() => setOpen(false)} className="absolute right-4 top-4 rounded-full bg-slate-100 p-2">
                 <X size={17} />
@@ -232,7 +232,7 @@ export default function AdminTicketPanel() {
                             <button
                               type="button"
                               onClick={() => startEditTicket(ticket)}
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700"
+                              className="edit-ticket-button inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
                             >
                               <Pencil size={14} />แก้ไข
                             </button>

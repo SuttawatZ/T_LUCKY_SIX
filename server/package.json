@@ -8,6 +8,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "seed:lottery": "node src/scripts/seed-lottery.js",
+    "seed:demo-pairs": "node src/scripts/seed-demo-pairs.js",
     "seed:admin": "node src/scripts/seed-admin.js"
   },
   "keywords": [],

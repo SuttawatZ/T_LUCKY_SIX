@@ -39,8 +39,25 @@ const getTickets = async (req, res, next) => {
     await releaseExpiredReservations();
     const filter = { status: "available" };
     if (req.query.drawId) filter.drawId = req.query.drawId;
-    if (req.query.number) filter.number = { $regex: req.query.number.replace(/[^0-9]/g, "") };
-    const tickets = await Ticket.find(filter).sort({ number: 1 }).limit(Math.min(Number(req.query.limit) || 24, 100));
+    const numberConditions = [];
+    const numberQuery = String(req.query.number || "").replace(/[^0-9]/g, "").slice(0, 6);
+    if (numberQuery) numberConditions.push({ number: { $regex: numberQuery } });
+    const price = {};
+    if (Number.isFinite(Number(req.query.priceMin))) price.$gte = Number(req.query.priceMin);
+    if (Number.isFinite(Number(req.query.priceMax))) price.$lte = Number(req.query.priceMax);
+    if (Object.keys(price).length) filter.price = price;
+    if (req.query.setCode) filter.setCode = String(req.query.setCode).slice(0, 80);
+    if (req.query.double === "true") numberConditions.push({ number: { $regex: "(\\d)\\1" } });
+    if (req.query.suffix) {
+      const suffix = String(req.query.suffix).replace(/[^0-9]/g, "").slice(0, 3);
+      if (suffix.length === 2 || suffix.length === 3) numberConditions.push({ number: { $regex: `${suffix}$` } });
+    }
+    if (numberConditions.length === 1) filter.number = numberConditions[0].number;
+    else if (numberConditions.length > 1) filter.$and = numberConditions;
+    const sortMap = { number_asc: { number: 1 }, number_desc: { number: -1 }, price_asc: { price: 1, number: 1 }, price_desc: { price: -1, number: 1 } };
+    const sort = sortMap[req.query.sort] || sortMap.number_asc;
+    const limit = Math.min(Number(req.query.limit) || 24, 500);
+    const tickets = await Ticket.find(filter).populate("drawId", "label drawDate").sort(sort).limit(limit);
     res.json(tickets);
   } catch (error) { next(error); }
 };
@@ -103,7 +120,7 @@ const approvePayment = async (req, res, next) => {
 
 const publishResults = async (req, res, next) => {
   try {
-    const { firstPrize, lastTwoDigits, frontThreeDigits, lastThreeDigits } = req.body;
+    const { firstPrize, secondPrize, thirdPrize, fourthPrize, fifthPrize, lastTwoDigits, frontThreeDigits, lastThreeDigits } = req.body;
     if (!/^\d{6}$/.test(String(firstPrize || ""))) return res.status(400).json({ message: "รางวัลที่ 1 ต้องเป็นเลข 6 หลัก" });
     const lastTwo = Array.isArray(lastTwoDigits) ? lastTwoDigits : [lastTwoDigits];
     if (!lastTwo.length || lastTwo.some((number) => !/^\d{2}$/.test(String(number)))) return res.status(400).json({ message: "เลขท้าย 2 ตัวต้องมี 2 หลัก" });
@@ -111,7 +128,16 @@ const publishResults = async (req, res, next) => {
     const lastThree = Array.isArray(lastThreeDigits) ? lastThreeDigits : [lastThreeDigits];
     if (!frontThree.length || frontThree.some((number) => !/^\d{3}$/.test(String(number)))) return res.status(400).json({ message: "เลขหน้า 3 ตัวต้องมี 3 หลัก" });
     if (!lastThree.length || lastThree.some((number) => !/^\d{3}$/.test(String(number)))) return res.status(400).json({ message: "เลขท้าย 3 ตัวต้องมี 3 หลัก" });
-    const draw = await Draw.findByIdAndUpdate(req.params.id, { $set: { "results.firstPrize": firstPrize, "results.lastTwoDigits": lastTwo, "results.frontThreeDigits": frontThree, "results.lastThreeDigits": lastThree, status: "announced" } }, { new: true, runValidators: true });
+    const rankPrizes = { secondPrize: [secondPrize, 5], thirdPrize: [thirdPrize, 10], fourthPrize: [fourthPrize, 50], fifthPrize: [fifthPrize, 100] };
+    const rankLabels = { secondPrize: "รางวัลที่ 2", thirdPrize: "รางวัลที่ 3", fourthPrize: "รางวัลที่ 4", fifthPrize: "รางวัลที่ 5" };
+    const resultFields = { "results.firstPrize": firstPrize, "results.lastTwoDigits": lastTwo, "results.frontThreeDigits": frontThree, "results.lastThreeDigits": lastThree, status: "announced" };
+    for (const [field, [value, count]] of Object.entries(rankPrizes)) {
+      if (value === undefined) return res.status(400).json({ message: `กรุณาระบุ${rankLabels[field]} ให้ครบ ${count} หมายเลขก่อนประกาศผล` });
+      const values = Array.isArray(value) ? value : [value];
+      if (values.length !== count || values.some((number) => !/^\d{6}$/.test(String(number)))) return res.status(400).json({ message: `${rankLabels[field]} ต้องมีเลข 6 หลักครบ ${count} หมายเลข` });
+      resultFields[`results.${field}`] = values;
+    }
+    const draw = await Draw.findByIdAndUpdate(req.params.id, { $set: resultFields }, { new: true, runValidators: true });
     if (!draw) return res.status(404).json({ message: "ไม่พบงวดสลาก" });
     res.json({ draw });
   } catch (error) { next(error); }
@@ -119,7 +145,12 @@ const publishResults = async (req, res, next) => {
 
 const getCart = async (req, res, next) => {
   try {
+    await releaseExpiredReservations();
     const cart = await Cart.findOne({ ownerKey: req.params.ownerKey });
+    if (cart && cart.expiresAt <= new Date()) {
+      await Cart.deleteOne({ _id: cart._id });
+      return res.json({ ownerKey: req.params.ownerKey, items: [], expiresAt: null, expired: true });
+    }
     res.json(cart || { ownerKey: req.params.ownerKey, items: [], expiresAt: null });
   } catch (error) { next(error); }
 };
@@ -129,14 +160,20 @@ const addToCart = async (req, res, next) => {
     await releaseExpiredReservations();
     const { ownerKey, ticketId } = req.body;
     if (!ownerKey || !ticketId) return res.status(400).json({ message: "ownerKey and ticketId are required" });
-    const until = cartExpiry();
+    let cart = await Cart.findOne({ ownerKey });
+    if (cart && cart.expiresAt <= new Date()) {
+      await Ticket.updateMany({ status: "reserved", reservedBy: ownerKey }, { $set: { status: "available", reservedBy: null, reservedUntil: null } });
+      await Cart.deleteOne({ _id: cart._id });
+      cart = null;
+    }
+    const until = cart?.expiresAt || cartExpiry();
     const ticket = await Ticket.findOneAndUpdate(
       { _id: ticketId, status: "available" },
       { $set: { status: "reserved", reservedBy: ownerKey, reservedUntil: until } },
       { new: true }
     );
     if (!ticket) return res.status(409).json({ message: "สลากใบนี้ถูกเลือกไปแล้ว" });
-    const cart = await Cart.findOneAndUpdate(
+    cart = await Cart.findOneAndUpdate(
       { ownerKey },
       { $set: { expiresAt: until }, $addToSet: { items: { ticketId: ticket._id, number: ticket.number, drawId: ticket.drawId, priceSnapshot: ticket.price } } },
       { new: true, upsert: true, setDefaultsOnInsert: true }
@@ -156,20 +193,37 @@ const removeFromCart = async (req, res, next) => {
 
 const createOrder = async (req, res, next) => {
   try {
-    const { ownerKey, buyerName, buyerPhone } = req.body;
+    const birthDate = new Date(req.user.dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    if (today.getMonth() < birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) age -= 1;
+    if (!Number.isFinite(birthDate.getTime()) || age < 20) return res.status(403).json({ message: "ต้องยืนยันอายุ 20 ปีขึ้นไปก่อนสั่งซื้อ" });
+    const { ownerKey, paymentMethod = "promptpay" } = req.body;
+    const allowedPaymentMethods = ["promptpay", "bank_transfer", "credit_card", "truemoney"];
+    if (!allowedPaymentMethods.includes(paymentMethod)) return res.status(400).json({ message: "กรุณาเลือกช่องทางชำระเงินที่รองรับ" });
     const cart = await Cart.findOne({ ownerKey });
     if (!cart || cart.items.length === 0) return res.status(400).json({ message: "ตะกร้าว่างเปล่า" });
     if (cart.expiresAt <= new Date()) return res.status(410).json({ message: "หมดเวลาจองสลากแล้ว" });
+    const liveItems = await Ticket.find({ _id: { $in: cart.items.map((item) => item.ticketId) }, status: "reserved", reservedBy: ownerKey });
+    if (liveItems.length !== cart.items.length) return res.status(409).json({ message: "สลากบางรายการหมดเวลาจองหรือถูกซื้อแล้ว กรุณาตรวจตะกร้าอีกครั้ง" });
     const subtotal = cart.items.reduce((sum, item) => sum + item.priceSnapshot, 0);
     const order = await Order.create({
       orderNo: `LT-${Date.now()}-${crypto.randomBytes(2).toString("hex").toUpperCase()}`,
-      buyerName,
-      buyerPhone,
+      userId: req.user._id,
+      buyerName: req.user.name,
+      buyerPhone: req.user.phone || req.user.email,
       items: cart.items.map((item) => ({ ticketId: item.ticketId, number: item.number, drawId: item.drawId, price: item.priceSnapshot })),
       subtotal,
       total: subtotal,
+      paymentMethod,
+      status: "paid",
+      paymentStatus: "paid",
     });
-    await Ticket.updateMany({ _id: { $in: cart.items.map((item) => item.ticketId) }, status: "reserved", reservedBy: ownerKey }, { $set: { status: "sold", soldOrderId: order._id } });
+    const sold = await Ticket.updateMany({ _id: { $in: cart.items.map((item) => item.ticketId) }, status: "reserved", reservedBy: ownerKey }, { $set: { status: "sold", soldOrderId: order._id } });
+    if (sold.modifiedCount !== cart.items.length) {
+      await Order.updateOne({ _id: order._id }, { $set: { status: "cancelled", paymentStatus: "failed" } });
+      return res.status(409).json({ message: "สลากถูกซื้อหรือหมดเวลาจองแล้ว กรุณาตรวจตะกร้าอีกครั้ง" });
+    }
     await Cart.deleteOne({ _id: cart._id });
     res.status(201).json(order);
   } catch (error) { next(error); }

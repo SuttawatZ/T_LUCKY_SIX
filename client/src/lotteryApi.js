@@ -35,4 +35,5 @@ export const lotteryApi = {
   cart: (ownerKey) => request(`/carts/${ownerKey}`),
   addToCart: (ownerKey, ticketId) => request("/carts/items", { method: "POST", body: JSON.stringify({ ownerKey, ticketId }) }),
   removeFromCart: (ownerKey, ticketId) => request("/carts/items", { method: "DELETE", body: JSON.stringify({ ownerKey, ticketId }) }),
+  createOrder: (body) => request("/orders", { method: "POST", body: JSON.stringify(body) }),
 };

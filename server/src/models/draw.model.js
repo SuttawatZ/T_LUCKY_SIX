@@ -18,6 +18,10 @@ const drawSchema = new mongoose.Schema(
     },
     results: {
       firstPrize: { type: String, match: /^\d{6}$/ },
+      secondPrize: { type: [String], default: [] },
+      thirdPrize: { type: [String], default: [] },
+      fourthPrize: { type: [String], default: [] },
+      fifthPrize: { type: [String], default: [] },
       lastTwoDigits: { type: [String], default: [] },
       frontThreeDigits: { type: [String], default: [] },
       lastThreeDigits: { type: [String], default: [] },

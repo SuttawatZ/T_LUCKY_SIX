@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import UserPanel from "./UserPanel";
+import CheckoutPanel from "./CheckoutPanel";
 import AdminPanel from "./AdminPanel";
 import AdminTicketPanel from "./AdminTicketPanel";
+import PrizeChecker from "./PrizeChecker";
 import { lotteryApi } from "./lotteryApi";
 import { ArrowDown, ArrowRight, Check, Clock3, Dices, Menu, Minus, Moon, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Sun, Ticket, Trophy, X } from "lucide-react";
 
@@ -31,7 +33,7 @@ function TicketCard({ ticket, onAdd, selected, drawLabel }) {
     </div>
     <div className="mt-3 border-t border-dashed border-slate-200 pt-3">
       <div className="mb-3 flex items-end justify-between gap-2"><span className="text-xs text-slate-500">ราคาใบละ</span><b className="font-['DM_Sans'] text-xl font-bold text-amber-600">{baht(ticket.price)}</b></div>
-      <button onClick={() => onAdd(ticket)} disabled={selected} className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#dc2626] px-3 py-3 text-xs font-bold text-white transition hover:bg-[#b91c1c] disabled:cursor-default disabled:bg-slate-200 disabled:text-slate-400"><ShoppingBag size={16} />{selected ? "อยู่ในตะกร้าแล้ว" : "หยิบใส่ตะกร้า"}</button>
+            <button onClick={() => onAdd(ticket)} disabled={selected} className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#dc2626] px-3 py-3 text-xs font-bold text-white transition hover:bg-[#b91c1c] disabled:cursor-default disabled:bg-slate-200 disabled:text-slate-400"><ShoppingBag size={16} />{selected ? "อยู่ในตะกร้าแล้ว" : "หยิบใส่ตะกร้า"}</button>
     </div>
   </article>;
 }
@@ -41,7 +43,7 @@ const thaiDate = (value) => new Intl.DateTimeFormat("th-TH", { day: "numeric", m
 function ResultsSection({ results }) {
   if (!results.length) return null;
   const [latest, ...previous] = results;
-  return <section id="results" className="mx-auto max-w-6xl px-5 pb-20">
+  return <section id="past-results" className="mx-auto max-w-6xl scroll-mt-20 px-5 pb-20">
     <div className="mb-7 flex items-end justify-between gap-4">
       <div><p className="mb-2 text-xs font-bold uppercase tracking-[.16em] text-amber-700">ตรวจผลรางวัล</p><h2 className="text-3xl font-bold">ผลรางวัลย้อนหลัง</h2></div>
       <Trophy className="hidden text-amber-500 sm:block" size={28} />
@@ -74,12 +76,36 @@ function Wheel({ onSearch, tickets: availableTickets }) {
 
 export default function App() {
   const [query, setQuery] = useState(""); const [filter, setFilter] = useState(""); const [cart, setCart] = useState([]); const [inventory, setInventory] = useState(tickets); const [results, setResults] = useState([]); const [drawer, setDrawer] = useState(false); const [notice, setNotice] = useState(""); const [darkMode, setDarkMode] = useState(() => localStorage.getItem("lucky-six-theme") === "dark");
-  const [now, setNow] = useState(() => new Date());
+  const [now, setNow] = useState(() => new Date()); const [reservationExpiresAt, setReservationExpiresAt] = useState(null); const [checkoutOpen, setCheckoutOpen] = useState(false); const [receipt, setReceipt] = useState(null);
   const ownerKey = useMemo(() => { const saved = localStorage.getItem("lucky-six-cart-key"); if (saved) return saved; const next = crypto.randomUUID(); localStorage.setItem("lucky-six-cart-key", next); return next; }, []);
+  const previousCartIds = useRef([]);
   useEffect(() => { document.documentElement.classList.toggle("dark", darkMode); localStorage.setItem("lucky-six-theme", darkMode ? "dark" : "light"); }, [darkMode]);
   useEffect(() => { const timer = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(timer); }, []);
-  useEffect(() => { lotteryApi.tickets().then((data) => { const loaded = data.map((ticket) => ({ id: ticket._id, number: ticket.number, price: ticket.price, set: ticket.setCode || ticket.series || "สลากกินแบ่ง" })); if (!loaded.length) return; setInventory(loaded); return lotteryApi.cart(ownerKey).then((savedCart) => setCart(savedCart.items.map((item) => loaded.find((ticket) => ticket.id === item.ticketId) || ({ id: item.ticketId, number: item.number, price: item.priceSnapshot, set: "สลากกินแบ่ง" })))); }).catch(() => setNotice("ยังเชื่อมต่อ API ไม่ได้ จึงแสดงข้อมูลตัวอย่าง")); }, [ownerKey]);
+  useEffect(() => {
+    Promise.all([lotteryApi.tickets(), lotteryApi.cart(ownerKey)]).then(([data, savedCart]) => {
+      const loaded = data.map((ticket) => ({ id: ticket._id, number: ticket.number, price: ticket.price, set: ticket.setCode || ticket.series || "\u0e0a\u0e38\u0e14\u0e2a\u0e25\u0e32\u0e01" }));
+      if (loaded.length) setInventory(loaded);
+      const source = loaded.length ? loaded : tickets;
+      setCart((savedCart.items || []).map((item) => source.find((ticket) => ticket.id === item.ticketId) || ({ id: item.ticketId, number: item.number, price: item.priceSnapshot, set: "\u0e0a\u0e38\u0e14\u0e2a\u0e25\u0e32\u0e01" })));
+      setReservationExpiresAt(savedCart.expiresAt ? new Date(savedCart.expiresAt) : null);
+    }).catch(() => setNotice("API \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e15\u0e48\u0e2d"));
+  }, [ownerKey]);
   useEffect(() => { lotteryApi.results().then((data) => setResults(Array.isArray(data) ? data : [])).catch(() => setResults([])); }, []);
+  useEffect(() => {
+    if (!reservationExpiresAt || now < reservationExpiresAt) return;
+    setReservationExpiresAt(null);
+    setCart([]);
+    setCheckoutOpen(false);
+    setNotice("\u0e2b\u0e21\u0e14\u0e40\u0e27\u0e25\u0e32\u0e08\u0e2d\u0e07\u0e41\u0e25\u0e49\u0e27 \u0e2a\u0e25\u0e32\u0e01\u0e16\u0e39\u0e01\u0e04\u0e37\u0e19\u0e2a\u0e15\u0e47\u0e2d\u0e01");
+    lotteryApi.tickets().then((data) => setInventory(data.map((ticket) => ({ id: ticket._id, number: ticket.number, price: ticket.price, set: ticket.setCode || ticket.series || "\u0e2a\u0e25\u0e32\u0e01" })))).catch(() => null);
+    setTimeout(() => setNotice(""), 4000);
+  }, [now, reservationExpiresAt]);
+
+  useEffect(() => {
+    const removedIds = previousCartIds.current.filter((id) => !cart.some((ticket) => ticket.id === id));
+    removedIds.filter(isStoredTicket).forEach((ticketId) => lotteryApi.removeFromCart(ownerKey, ticketId).catch(() => null));
+    previousCartIds.current = cart.map((ticket) => ticket.id);
+  }, [cart, ownerKey]);
   const shown = useMemo(() => {
     if (filter === "0" || filter === "9") return inventory.filter((ticket) => ticket.number.endsWith(filter));
     if (filter === "11") return inventory.filter((ticket) => /(\d)\1/.test(ticket.number));
@@ -90,13 +116,23 @@ export default function App() {
     if (cart.some((item) => item.id === ticket.id)) return;
     try {
       // Initial sample tickets have numeric IDs. Send only MongoDB ticket IDs to the API.
-      if (isStoredTicket(ticket.id)) await lotteryApi.addToCart(ownerKey, ticket.id);
+      if (isStoredTicket(ticket.id)) { const saved = await lotteryApi.addToCart(ownerKey, ticket.id); setReservationExpiresAt(saved.expiresAt ? new Date(saved.expiresAt) : null); }
+      else setReservationExpiresAt(new Date(Date.now() + 10 * 60 * 1000));
       setCart((current) => [...current, ticket]);
       setNotice(`จองเลข ${ticket.number} แล้ว`);
       setTimeout(() => setNotice(""), 2200);
     } catch (error) { setNotice(error.message); }
   };
+  const remove = async (ticket) => {
+    try {
+      if (isStoredTicket(ticket.id)) await lotteryApi.removeFromCart(ownerKey, ticket.id);
+      setCart((current) => current.filter((item) => item.id !== ticket.id));
+      setNotice(`นำเลข ${ticket.number} ออกจากตะกร้าแล้ว`);
+      setTimeout(() => setNotice(""), 2200);
+    } catch (error) { setNotice(error.message); }
+  };
   const total = cart.reduce((sum, ticket) => sum + ticket.price, 0);
+  const reservationTimer = reservationExpiresAt ? timeUntil(reservationExpiresAt, now) : null;
   const draw = nextDraw(now); const countdown = timeUntil(draw.date, now);
   const searchWheelResult = (number) => { setFilter(""); setQuery(number); };
   const filters = [{ label: "ทั้งหมด", value: "" }, { label: "เลขลงท้าย 0", value: "0" }, { label: "เลขลงท้าย 9", value: "9" }, { label: "เลขเบิ้ล", value: "11" }];
@@ -104,10 +140,12 @@ export default function App() {
     <main id="top"><section className="hero-shell relative mx-auto flex max-w-7xl flex-col items-center justify-between gap-12 overflow-hidden px-5 py-18 md:flex-row md:py-24"><div className="relative z-10 max-w-2xl"><p className="mb-3 text-xs font-bold uppercase tracking-[.16em] text-amber-700">งวดถัดไป • {draw.label}</p><h1 className="font-['DM_Sans'] text-5xl font-bold leading-[.95] tracking-tight sm:text-7xl">เลขที่ใช่<br /><span className="text-amber-600">อาจเป็นของคุณ</span></h1><p className="mt-7 max-w-xl text-base leading-8 text-slate-600">เลือกสลากกินแบ่งรัฐบาลจากเลขที่คุณชอบ จองใส่ตะกร้า และจัดการประวัติคำสั่งซื้อได้ในที่เดียว</p><a href="#tickets" className="hero-cta mt-8 inline-flex items-center gap-5 rounded-lg bg-ink px-5 py-4 text-sm font-bold text-white shadow-lg shadow-slate-300/40 transition hover:-translate-y-0.5">เลือกเลขของคุณ <ArrowDown size={17} /></a><div className="mt-8 flex flex-wrap gap-5 text-xs text-slate-600"><span><Check className="mr-1 inline text-emerald-600" size={14} />คัดเลือกสลากจริง</span><span><ShieldCheck className="mr-1 inline text-emerald-600" size={14} />ชำระเงินปลอดภัย</span></div></div><aside className="hero-draw-card relative z-10 w-full max-w-sm rounded-2xl bg-[#153f70] p-8 text-white shadow-[16px_17px_0_#f4dfb9]"><div className="mb-8 flex items-center justify-between"><Sparkles className="text-amber-300" /><span className="rounded-full border border-blue-300/40 px-3 py-1 text-[10px] font-bold uppercase tracking-[.16em] text-blue-100">Next draw</span></div><p className="text-xs text-blue-200">งวดประจำวันที่</p><h2 className="mt-1 text-3xl font-bold">{draw.label}</h2><hr className="my-6 border-blue-400/60" /><p className="text-xs text-blue-200">ปิดรับจองใน</p><div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-['DM_Sans'] text-3xl font-bold"><span>{String(countdown.days).padStart(2, "0")}<small className="ml-1 text-xs font-normal text-blue-200">วัน</small></span><span>{String(countdown.hours).padStart(2, "0")}<small className="ml-1 text-xs font-normal text-blue-200">ชม.</small></span><span>{String(countdown.minutes).padStart(2, "0")}<small className="ml-1 text-xs font-normal text-blue-200">นาที</small></span><span>{String(countdown.seconds).padStart(2, "0")}<small className="ml-1 text-xs font-normal text-blue-200">วินาที</small></span></div><div className="mt-7 flex items-center gap-2 text-xs text-blue-100"><span className="h-2 w-2 rounded-full bg-emerald-400" />เปิดรับจองสลากอยู่</div></aside></section>
     <section className="grid grid-cols-3 border-y border-amber-200 bg-[#f8efd9] px-5 py-7 text-center"><div><b className="block font-['DM_Sans'] text-xl">6,000,000</b><span className="text-xs text-stone-600">บาท รางวัลที่ 1</span></div><div><b className="block font-['DM_Sans'] text-xl">80+</b><span className="text-xs text-stone-600">บาท ราคาเริ่มต้น</span></div><div><b className="block font-['DM_Sans'] text-xl">10 นาที</b><span className="text-xs text-stone-600">เวลาจองในตะกร้า</span></div></section><Wheel onSearch={searchWheelResult} tickets={inventory} />
     <section id="tickets" className="mx-auto max-w-6xl px-5 py-16"><div className="mb-7 flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="mb-2 text-xs font-bold uppercase tracking-[.16em] text-amber-700">เลือกเลขนำโชค</p><h2 className="text-3xl font-bold">สลากพร้อมให้เลือก</h2></div><label className="flex w-full max-w-xs items-center gap-2 border-b border-ink pb-2"><Search size={17} /><input value={query} onChange={(event) => { setFilter(""); setQuery(event.target.value.replace(/\D/g, "")); }} maxLength="6" placeholder="ค้นหาเลขที่ชอบ" className="w-full bg-transparent text-sm outline-none" /></label></div><div className="mb-8 flex flex-wrap gap-2">{filters.map((item) => <button key={item.value} onClick={() => { setFilter(item.value); setQuery(item.value); }} className={`rounded-full border px-4 py-2 text-xs ${filter === item.value ? "border-ink bg-ink text-white" : "border-stone-300 text-slate-600"}`}>{item.label}</button>)}</div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{shown.map((ticket) => <TicketCard key={ticket.id} ticket={ticket} drawLabel={draw.label} onAdd={add} selected={cart.some((item) => item.id === ticket.id)} />)}</div>{!shown.length && <p className="py-16 text-center text-slate-500">ไม่พบเลขที่ค้นหา ลองค้นหาตัวเลขอื่นดูนะ</p>}</section>
-    <ResultsSection results={results} /><section id="how" className="mx-auto max-w-6xl px-5 pb-20"><p className="text-xs font-bold uppercase tracking-[.16em] text-amber-700">ง่ายใน 3 ขั้นตอน</p><h2 className="mt-2 text-3xl font-bold">เลือกเลขอย่างมั่นใจ</h2><div className="mt-7 grid gap-4 md:grid-cols-3">{[["01","เลือกเลขที่ชอบ","ค้นหาเลขมงคล หรือเลือกจากสลากที่พร้อมขาย"],["02","จองในตะกร้า","เลขของคุณจะถูกจองไว้ 10 นาที เพื่อให้ชำระได้ทัน"],["03","ชำระและรอลุ้น","เก็บประวัติสลาก พร้อมตรวจผลได้ในที่เดียว"]].map(([no,title,text]) => <article key={no} className="rounded-xl bg-slate-100 p-7"><b className="font-['DM_Sans'] text-amber-700">{no}</b><h3 className="mt-7 font-bold">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{text}</p></article>)}</div></section></main>
+    <PrizeChecker draws={results} /><ResultsSection results={results} /><section id="how" className="mx-auto max-w-6xl px-5 pb-20"><p className="text-xs font-bold uppercase tracking-[.16em] text-amber-700">ง่ายใน 3 ขั้นตอน</p><h2 className="mt-2 text-3xl font-bold">เลือกเลขอย่างมั่นใจ</h2><div className="mt-7 grid gap-4 md:grid-cols-3">{[["01","เลือกเลขที่ชอบ","ค้นหาเลขมงคล หรือเลือกจากสลากที่พร้อมขาย"],["02","จองในตะกร้า","เลขของคุณจะถูกจองไว้ 10 นาที เพื่อให้ชำระได้ทัน"],["03","ชำระและรอลุ้น","เก็บประวัติสลาก พร้อมตรวจผลได้ในที่เดียว"]].map(([no,title,text]) => <article key={no} className="rounded-xl bg-slate-100 p-7"><b className="font-['DM_Sans'] text-amber-700">{no}</b><h3 className="mt-7 font-bold">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{text}</p></article>)}</div></section></main>
     <footer className="bg-ink px-5 py-10 text-blue-100"><div className="mx-auto flex max-w-6xl flex-col justify-between gap-4 text-sm md:flex-row"><b className="font-['DM_Sans'] tracking-widest text-white">✦ LUCKY SIX</b><p>แพลตฟอร์มตัวอย่างสำหรับสลากกินแบ่งรัฐบาล</p><p className="max-w-sm text-xs">กรุณาตรวจสอบข้อกำหนดด้านอายุ ใบอนุญาต และกฎหมายที่เกี่ยวข้องก่อนใช้งานจริง</p></div></footer>
     {notice && <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-ink px-5 py-3 text-sm text-white shadow-xl">{notice}</div>}
-    {drawer && <><button aria-label="ปิดตะกร้า" onClick={() => setDrawer(false)} className="fixed inset-0 z-40 cursor-default bg-slate-950/45" /><aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white p-6 shadow-2xl"><div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-amber-700">รายการที่เลือก</p><h2 className="mt-1 text-2xl font-bold">ตะกร้าของคุณ</h2></div><button onClick={() => setDrawer(false)} className="grid h-9 w-9 place-items-center rounded-full bg-slate-100"><X size={19} /></button></div><div className="mt-6 rounded-lg bg-amber-50 p-3 text-xs text-amber-800"><Clock3 size={14} className="mr-1 inline" />เลขในตะกร้าจะถูกจองไว้ 10 นาที</div><div className="flex-1 overflow-auto">{cart.length ? cart.map((ticket) => <div key={ticket.id} className="flex items-center justify-between border-b py-5"><div><b className="font-['DM_Sans'] text-xl tracking-widest">{ticket.number}</b><span className="mt-1 block text-xs text-slate-500">งวด 16 ก.ย. 2569 · {ticket.set}</span></div><div className="text-right"><b>{baht(ticket.price)}</b><button onClick={() => setCart(cart.filter((item) => item.id !== ticket.id))} className="mt-1 block text-xs text-red-500">ลบ</button></div></div>) : <div className="grid h-full place-items-center text-center text-sm text-slate-500"><Ticket className="mx-auto mb-3 text-slate-300" size={35} />ยังไม่มีสลากในตะกร้า</div>}</div><div className="border-t pt-4"><div className="mb-4 flex justify-between"><span className="text-sm text-slate-500">ยอดรวม</span><b className="font-['DM_Sans'] text-2xl">{baht(total)}</b></div><button disabled={!cart.length} className="w-full rounded-lg bg-ink py-3.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">ดำเนินการชำระเงิน <ArrowRight size={16} className="ml-1 inline" /></button></div></aside></>}
+    {drawer && <><button aria-label="ปิดตะกร้า" onClick={() => setDrawer(false)} className="fixed inset-0 z-40 cursor-default bg-slate-950/45" /><aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white p-6 shadow-2xl"><div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-amber-700">รายการที่เลือก</p><h2 className="mt-1 text-2xl font-bold">ตะกร้าของคุณ</h2></div><button onClick={() => setDrawer(false)} className="grid h-9 w-9 place-items-center rounded-full bg-slate-100"><X size={19} /></button></div><div className="mt-6 rounded-lg bg-amber-50 p-3 text-xs text-amber-800"><Clock3 size={14} className="mr-1 inline" />เวลาจองคงเหลือ {reservationTimer ? <b>{String(reservationTimer.minutes).padStart(2, "0")}:{String(reservationTimer.seconds).padStart(2, "0")}</b> : "10:00"} นาที</div><div className="flex-1 overflow-auto">{cart.length ? cart.map((ticket) => <div key={ticket.id} className="flex items-center justify-between border-b py-5"><div><b className="font-['DM_Sans'] text-xl tracking-widest">{ticket.number}</b><span className="mt-1 block text-xs text-slate-500">งวด 16 ก.ย. 2569 · {ticket.set}</span></div><div className="text-right"><b>{baht(ticket.price)}</b><button onClick={() => setCart(cart.filter((item) => item.id !== ticket.id))} className="mt-1 block text-xs text-red-500">ลบ</button></div></div>) : <div className="grid h-full place-items-center text-center text-sm text-slate-500"><Ticket className="mx-auto mb-3 text-slate-300" size={35} />ยังไม่มีสลากในตะกร้า</div>}</div><div className="border-t pt-4"><div className="mb-4 flex justify-between"><span className="text-sm text-slate-500">ยอดรวม</span><b className="font-['DM_Sans'] text-2xl">{baht(total)}</b></div><button onClick={() => setCheckoutOpen(true)} disabled={!cart.length} className="w-full rounded-lg bg-ink py-3.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">ดำเนินการชำระเงิน <ArrowRight size={16} className="ml-1 inline" /></button></div></aside></>}
+    {checkoutOpen && <CheckoutPanel cart={cart} total={total} ownerKey={ownerKey} onClose={() => setCheckoutOpen(false)} onSuccess={(order) => { setCheckoutOpen(false); setDrawer(false); setCart([]); setReservationExpiresAt(null); setReceipt(order); lotteryApi.tickets().then((data) => setInventory(data.map((ticket) => ({ id: ticket._id, number: ticket.number, price: ticket.price, set: ticket.setCode || ticket.series || "\u0e2a\u0e25\u0e32\u0e01" })))).catch(() => null); }} />}
+    {receipt && <><button onClick={() => setReceipt(null)} aria-label="ปิด" className="fixed inset-0 z-[80] bg-slate-950/55" /><section className="fixed inset-x-4 top-1/2 z-[90] mx-auto max-h-[90vh] max-w-lg -translate-y-1/2 overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"><div className="text-center"><div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-700"><Check size={28} /></div><h2 className="mt-3 text-2xl font-bold">ยืนยันคำสั่งซื้อสำเร็จ</h2><p className="mt-1 text-sm text-slate-500">ชำระเงินแบบจำลอง</p></div><div className="mt-5 rounded-xl border border-dashed border-slate-300 p-4"><p className="text-xs text-slate-500">เลขคำสั่งซื้อ</p><b className="text-lg">{receipt.orderNo}</b><p className="mt-1 text-xs text-slate-500">{new Date(receipt.createdAt || Date.now()).toLocaleString("th-TH")}</p><p className="mt-2 text-sm text-slate-600">ช่องทางชำระเงิน: {{ promptpay: "PromptPay QR", bank_transfer: "โอนผ่านธนาคาร", credit_card: "บัตรเครดิต", truemoney: "TrueMoney Wallet" }[receipt.paymentMethod] || receipt.paymentMethod}</p></div><div className="mt-4 space-y-2">{receipt.items?.map((item, index) => <div key={index} className="flex justify-between border-b pb-2 text-sm"><span className="font-mono tracking-widest">{item.number}</span><b>{baht(item.price)}</b></div>)}</div><div className="mt-4 flex justify-between text-lg"><span>ยอดรวม</span><b>{baht(receipt.total)}</b></div><p className="mt-4 rounded-lg bg-amber-50 p-3 text-xs">ใบเสร็จจำลอง ไม่ใช่หลักฐานการชำระเงิน</p><button onClick={() => setReceipt(null)} className="mt-5 w-full rounded-lg bg-ink py-3 font-bold text-white">เสร็จสิ้น</button></section></>}
     <UserPanel />
     <AdminPanel />
     <AdminTicketPanel />

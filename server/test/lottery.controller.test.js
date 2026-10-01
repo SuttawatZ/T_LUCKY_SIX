@@ -85,3 +85,29 @@ test("admin can delete a ticket even when it is already sold", async () => {
   assert.equal(res.statusCode, 204);
   Ticket.findOneAndDelete = originalDelete;
 });
+
+test("result publication rejects incomplete prize 2 to 5 lists", async () => {
+  const res = response();
+  await controller.publishResults({ params: { id: "draw-1" }, body: { firstPrize: "123456", secondPrize: ["000001"], lastTwoDigits: ["56"], frontThreeDigits: ["123"], lastThreeDigits: ["456"] } }, res, assert.fail);
+  assert.equal(res.statusCode, 400);
+});
+
+test("result publication stores all prize 2 to 5 numbers", async () => {
+  const originalUpdate = Draw.findByIdAndUpdate;
+  const secondPrize = ["000001", "000002", "000003", "000004", "000005"];
+  const thirdPrize = Array.from({ length: 10 }, (_, index) => String(index + 10).padStart(6, "0"));
+  const fourthPrize = Array.from({ length: 50 }, (_, index) => String(index + 20).padStart(6, "0"));
+  const fifthPrize = Array.from({ length: 100 }, (_, index) => String(index + 70).padStart(6, "0"));
+  Draw.findByIdAndUpdate = async (_id, update, options) => {
+    assert.deepEqual(update.$set["results.secondPrize"], secondPrize);
+    assert.deepEqual(update.$set["results.thirdPrize"], thirdPrize);
+    assert.deepEqual(update.$set["results.fourthPrize"], fourthPrize);
+    assert.deepEqual(update.$set["results.fifthPrize"], fifthPrize);
+    assert.equal(options.runValidators, true);
+    return { _id: "draw-1", ...update.$set };
+  };
+  const res = response();
+  await controller.publishResults({ params: { id: "draw-1" }, body: { firstPrize: "123456", secondPrize, thirdPrize, fourthPrize, fifthPrize, lastTwoDigits: ["56"], frontThreeDigits: ["123"], lastThreeDigits: ["456"] } }, res, assert.fail);
+  assert.equal(res.statusCode, 200);
+  Draw.findByIdAndUpdate = originalUpdate;
+});
