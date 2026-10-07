@@ -25,6 +25,7 @@ export const lotteryApi = {
   results: () => request("/results"),
   tickets: () => request("/tickets?limit=500"),
   draws: () => request("/draws"),
+  currentDraw: () => request("/draws/current"),
   createTicket: (body) => request("/admin/tickets", { method: "POST", body: JSON.stringify(body) }),
   adminTickets: () => request("/admin/tickets"),
   updateTicket: (id, body) => request(`/admin/tickets/${id}`, { method: "PATCH", body: JSON.stringify(body) }),

@@ -3,8 +3,9 @@ const mongoose = require("mongoose");
 const connectDB = require("../config/db");
 const Draw = require("../models/draw.model");
 const Ticket = require("../models/ticket.model");
+const { DEMO_CURRENT_DRAW_DATE, DEMO_CURRENT_DRAW_LABEL, DEMO_SALE_START_AT, DEMO_SALE_END_AT } = require("../config/demo-draw");
 
-const drawDate = new Date("2026-10-01T10:00:00+07:00");
+const drawDate = DEMO_CURRENT_DRAW_DATE;
 const samplePairs = [
   { number: "777777", series: "คู่สาธิต 777777 ชุด A", setCode: "คู่สาธิต A" },
   { number: "777777", series: "คู่สาธิต 777777 ชุด B", setCode: "คู่สาธิต B" },
@@ -17,11 +18,11 @@ async function seedDemoPairs() {
   const draw = await Draw.findOneAndUpdate(
     { drawDate },
     {
-      $set: { label: "งวด 1 ตุลาคม 2569" },
       $setOnInsert: {
+        label: DEMO_CURRENT_DRAW_LABEL,
         drawDate,
-        saleStartAt: new Date("2026-09-16T15:00:00+07:00"),
-        saleEndAt: new Date("2026-10-01T15:00:00+07:00"),
+        saleStartAt: DEMO_SALE_START_AT,
+        saleEndAt: DEMO_SALE_END_AT,
         status: "open",
       },
     },
@@ -32,9 +33,8 @@ async function seedDemoPairs() {
     updateOne: {
       filter: { drawId: draw._id, number, series, setCode },
       update: {
-        $set: { price: 100, faceValue: 80 },
         // Keep a ticket's reserved/sold state intact when this script is rerun.
-        $setOnInsert: { drawId: draw._id, number, series, setCode, status: "available" },
+        $setOnInsert: { drawId: draw._id, number, series, setCode, price: 100, faceValue: 80, status: "available" },
       },
       upsert: true,
     },

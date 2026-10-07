@@ -12,6 +12,7 @@ const drawSchema = new mongoose.Schema(
       default: "upcoming",
       index: true,
     },
+    isDemo: { type: Boolean, default: false },
     prizeInfo: {
       firstPrize: { type: Number, default: 6000000 },
       lastTwoDigits: { type: Number, default: 2000 },

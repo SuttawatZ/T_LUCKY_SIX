@@ -4,6 +4,7 @@ const { requireAuth, requireRole } = require("../middlewares/auth.middleware");
 
 const router = express.Router();
 router.get("/draws", controller.getDraws);
+router.get("/draws/current", controller.getCurrentDraw);
 router.get("/dashboard", controller.getDashboard);
 router.get("/results", controller.getResults);
 router.get("/tickets", controller.getTickets);

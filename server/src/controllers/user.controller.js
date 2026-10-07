@@ -3,15 +3,8 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
 const Order = require("../models/order.model");
 const { getJwtSecret } = require("../config/auth");
+const { ageAtLeast20 } = require("../config/draw-config");
 
-const ageAtLeast20 = (value) => {
-  const dob = new Date(value);
-  if (!value || Number.isNaN(dob.getTime()) || dob > new Date()) return false;
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  if (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) age -= 1;
-  return age >= 20;
-};
 const safeUser = (user) => ({ id: user._id, name: user.name, phone: user.phone, email: user.email, role: user.role, dateOfBirth: user.dateOfBirth, ageConfirmedAt: user.ageConfirmedAt, ageVerified: ageAtLeast20(user.dateOfBirth), kycStatus: user.kycStatus, addresses: user.addresses, createdAt: user.createdAt });
 const signToken = (user) => {
   return jwt.sign({ sub: user._id.toString(), role: user.role }, getJwtSecret(), { expiresIn: "7d" });
@@ -49,7 +42,8 @@ const getMe = (req, res) => res.json({ user: safeUser(req.user) });
 
 const listMyOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find({ userId: req.user._id }).sort({ createdAt: -1 }).limit(100).lean();
+    const orders = await Order.find({ userId: req.user._id }).sort({ createdAt: -1 }).limit(100).populate("items.drawId", "label").lean();
+    for (const order of orders) for (const item of order.items || []) item.drawLabel = item.drawLabel || item.drawId?.label;
     res.json({ orders });
   } catch (error) { next(error); }
 };

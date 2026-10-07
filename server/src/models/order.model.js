@@ -1,12 +1,23 @@
 const mongoose = require("mongoose");
 
+const orderItemSchema = new mongoose.Schema(
+  {
+    ticketId: { type: mongoose.Schema.Types.ObjectId, ref: "Ticket" },
+    number: String,
+    drawId: { type: mongoose.Schema.Types.ObjectId, ref: "Draw" },
+    drawLabel: String,
+    price: Number,
+  },
+  { _id: false }
+);
+
 const orderSchema = new mongoose.Schema(
   {
     orderNo: { type: String, required: true, unique: true, index: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     buyerName: { type: String, required: true, trim: true },
     buyerPhone: { type: String, required: true, trim: true },
-    items: [{ ticketId: mongoose.Schema.Types.ObjectId, number: String, drawId: mongoose.Schema.Types.ObjectId, price: Number }],
+    items: { type: [orderItemSchema], default: [] },
     subtotal: { type: Number, required: true, min: 0 },
     serviceFee: { type: Number, default: 0, min: 0 },
     total: { type: Number, required: true, min: 0 },

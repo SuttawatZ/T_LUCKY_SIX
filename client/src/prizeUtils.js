@@ -22,8 +22,19 @@ export const prizeLabels = {
   lastTwoDigits: "เลขท้าย 2 ตัว",
 };
 
+export function hasCompleteResults(results = {}) {
+  const counts = { secondPrize: 5, thirdPrize: 10, fourthPrize: 50, fifthPrize: 100, frontThreeDigits: 2, lastThreeDigits: 2, lastTwoDigits: 1 };
+  if (!/^\d{6}$/.test(String(results.firstPrize || ""))) return false;
+  return Object.entries(counts).every(([key, count]) => {
+    const values = results[key];
+    if (!Array.isArray(values) || values.length !== count) return false;
+    const digits = key === "lastTwoDigits" ? 2 : key === "frontThreeDigits" || key === "lastThreeDigits" ? 3 : 6;
+    return values.every((value) => new RegExp(`^\\d{${digits}}$`).test(String(value)));
+  });
+}
+
 export function getPrizeMatches(number, results = {}) {
-  if (!/^\d{6}$/.test(String(number || "")) || !results?.firstPrize) return [];
+  if (!/^\d{6}$/.test(String(number || "")) || !hasCompleteResults(results)) return [];
   const matches = [];
   const add = (key) => matches.push({ key, label: prizeLabels[key], amount: prizeAmounts[key] });
   const winningNumber = String(results.firstPrize).padStart(6, "0");
